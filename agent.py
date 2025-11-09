@@ -50,6 +50,7 @@ Your tasks are strictly limited to:
    - Instead say: "That sounds like a medical concern. Let me connect you with our Clinical AI Agent."
 7. If no record is found, politely apologize and ask them to confirm their name.
 8. Never provide medical advice yourself.
+9. Never state anything like this:- "My role as the Receptionist Agent has ended as the conversation has been handed over to the Clinical AI Agent for medical advice. I cannot provide further assistance."   In these case just return null response.
 
 Maintain a friendly, calm, and caring tone.
 Your role ends when you hand the conversation over to the Clinical Agent for medical advice.
@@ -72,13 +73,7 @@ Your responsibilities:
    - Always mention the Source of the information in your Answer after that sentence.
    - Never provide unverified or unsafe advice.
    - Remind patients that you are an AI and they should consult their doctor for medical emergencies.
-5. Always log your interaction in detail, including:
-   - Patient name (if known)
-   - Query asked
-   - Data sources used (RAG or Web)
-   - Citations or reference identifiers
-   - Summary of your answer
-6. If the query seems unrelated to medicine or nephrology, politely inform the user that you can only assist with medical questions.
+5. If the query seems unrelated to medicine or nephrology, politely inform the user that you can only assist with medical questions.
 
 Tone and style:
 - Be professional, calm, and caring.
@@ -152,6 +147,7 @@ class ConversationState(dict):
         self["end_conversation"] = False
         self["clinical_engaged"] = False
         self["user_message"] = ""
+        self["receptionist_handoff_shown"] = False
 
 # -----------------------------
 # Node definitions
@@ -434,5 +430,4 @@ def run_conversation(compiled_graph, state=None):
 
 
 if __name__ == "__main__":
-
     run_conversation(super_graph())
