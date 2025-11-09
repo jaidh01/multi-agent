@@ -80,33 +80,20 @@ if prompt := st.chat_input("Type a message and press Enter..."):
             st.markdown(f"⚠️ Error contacting backend: {result['error']}")
         st.session_state.messages.append({"role": "assistant", "content": f"Error: {result['error']}"})
     else:
-        # Handle multiple responses or fallback single one
-        responses = result.get("response") or result.get("responses")
+        # Get the list of agent responses from backend
+        responses = result.get("response") or result.get("responses") or []
 
-        # 🩺 Handle both list and stringified JSON safely
-        if isinstance(responses, str):
-            try:
-                cleaned = responses.replace("'", '"').replace("None", "null")
-                responses = json.loads(cleaned)
-            except Exception as e:
-                st.warning(f"⚠️ Could not parse backend responses: {e}")
-                responses = []
+        # Iterate through all responses and display
+        for resp in responses:
+            agent_name = resp.get("agent", "Assistant")
+            message = resp.get("message", "")
 
-        if not responses:
-            # Fallback if backend sent just one response text
-            assistant_text = result.get("response") or "(no assistant response)"
+            if not message.strip():
+                # skip empty messages
+                continue
+
+            display_name = f"**{agent_name}:**"
             with st.chat_message("assistant"):
-                st.markdown(assistant_text)
-            st.session_state.messages.append({"role": "assistant", "content": assistant_text})
+                st.markdown(f"{display_name} {message}")
 
-        else:
-            # ✅ Iterate through all responses (already a list)
-            for resp in responses:
-                agent_name = resp.get("agent", "Assistant")
-                message = resp.get("message", "")
-                display_name = f"**{agent_name}:**"
-
-                with st.chat_message("assistant"):
-                    st.markdown(f"{display_name} {message}")
-
-                st.session_state.messages.append({"role": agent_name, "content": message})
+            st.session_state.messages.append({"role": agent_name, "content": message})
