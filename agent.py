@@ -41,14 +41,15 @@ Your tasks are strictly limited to:
 1. Greeting the patient politely.
 2. Asking for their full name if it is not provided.
 3. Using the provided tool `retrieve_patient_discharge_report` to fetch their discharge report by name.
-4. Once the report is retrieved:
+4. If multiple entries are there in the database then ask for patient_id.
+5. Once the report is retrieved:
    - Confirm that you found the report.
    - Do Not summarize the entire report.
    - Just politely ask one general follow-up question based on the discharge information.
-5. If the patient says anything related to symptoms or medical concerns (e.g., swelling, pain, shortness of breath, dizziness, etc.), do NOT answer directly.
+6. If the patient says anything related to symptoms or medical concerns (e.g., swelling, pain, shortness of breath, dizziness, etc.), do NOT answer directly.
    - Instead say: "That sounds like a medical concern. Let me connect you with our Clinical AI Agent."
-6. If no record is found, politely apologize and ask them to confirm their name.
-7. Never provide medical advice yourself.
+7. If no record is found, politely apologize and ask them to confirm their name.
+8. Never provide medical advice yourself.
 
 Maintain a friendly, calm, and caring tone.
 Your role ends when you hand the conversation over to the Clinical Agent for medical advice.
@@ -91,19 +92,33 @@ Disclaimers:
 
 def retrieve_patient_discharge_report(patient_name: str) -> Dict[str, Any]:
     """
-    Retrieve a patient's discharge report by their full name.
-    Returns structured information about diagnosis, medications, and follow-up details.
+    Retrieve discharge report(s) for a given patient name.
+    If multiple patients have the same name, return all matching records.
     """
-    with open("patient_reports.json", "r") as f:
-        logging.info(f"Retrieving discharge report for patient: {patient_name}")
-        reports = json.load(f)
-    for patient in reports["patients"]:
-        if patient["patient_name"] == patient_name:
-            logging.info(f"Retrieved Discharge report for patient: {patient_name}")
-            print(f"Discharge report for {patient_name}: {patient}")
-            return patient
-    logging.warning(f"No record found for patient: {patient_name}")
-    return f"No record found for patient: {patient_name}"
+    logging.info(f"Searching discharge reports for patient name: {patient_name}")
+
+    try:
+        with open("patient_reports.json", "r") as f:
+            reports = json.load(f)
+    except FileNotFoundError:
+        logging.error("patient_reports.json file not found.")
+        return {"error": "Patient reports file not found."}
+
+    # Find all matches
+    matches = [
+        patient for patient in reports.get("patients", [])
+        if patient.get("patient_name", "").strip().lower() == patient_name.strip().lower()
+    ]
+
+    if not matches:
+        logging.warning(f"No discharge report found for patient name: {patient_name}")
+        return {"error": f"No record found for patient: {patient_name}"}
+
+    if len(matches) > 1:
+        logging.warning(f"Multiple discharge reports found for patient name: {patient_name}")
+
+    logging.info(f"Found {len(matches)} matching discharge report(s) for {patient_name}")
+    return {"matches": matches}
 
 def knowledge_search(query: str):
     """
@@ -419,4 +434,5 @@ def run_conversation(compiled_graph, state=None):
 
 
 if __name__ == "__main__":
+
     run_conversation(super_graph())
